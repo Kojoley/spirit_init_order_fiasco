@@ -1,0 +1,51 @@
+#==============================================================================
+#   Copyright (c) 2016-2019 Nikita Kniazev
+#
+#   Use, modification and distribution is subject to the Boost Software
+#   License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
+#   http://www.boost.org/LICENSE_1_0.txt)
+#==============================================================================
+
+language: cpp
+
+sudo: false
+
+addon_shortcuts:
+  clang-7: &clang-7
+    apt:
+      sources:
+        - llvm-toolchain-xenial-7
+      packages:
+        - clang-7
+
+  gcc-8: &gcc-8
+    apt:
+      sources:
+        - ubuntu-toolchain-r-test
+      packages:
+        - g++-8
+
+os: linux
+dist: xenial
+
+matrix:
+  include:
+    - { env: 'CCXX=clang++-7', compiler: clang-7, addons: *clang-7 }
+    - { env: 'CCXX=g++-8', compiler: gcc-8, addons: *gcc-8 }
+
+before_install:
+  # Checkout Boost
+  - git clone -j10 --branch=develop --depth=1 --quiet
+      --recurse-submodules --shallow-submodules
+      https://github.com/boostorg/boost.git $HOME/boost-repo
+  - pushd $HOME/boost-repo
+  - ./bootstrap.sh
+  - ./b2 headers
+  - popd
+
+script:
+  - $CCXX -I"$HOME/boost-repo" -c a.cpp
+  - $CCXX -I"$HOME/boost-repo" -c b.cpp
+  - $CCXX -I"$HOME/boost-repo" -c main.cpp
+  - $CCXX -I"$HOME/boost-repo" a.o b.o main.o -o main
+  - ./main
